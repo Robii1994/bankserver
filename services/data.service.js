@@ -1,6 +1,8 @@
 const { request } = require("express");
 const session = require("express-session");
 
+const db = require('./db');
+
 let accountDetails = {
     1000: { acno: 1000, username: "userone", balance: 5000, password: "user1" },
     1001: { acno: 1001, username: "usertwo", balance: 3000, password: "user2" },
@@ -10,136 +12,122 @@ let accountDetails = {
 // const currentUser = ""
 
 const register = (acno,username,password)=>{
-    console.log("Register Called");
+    // console.log("Register Called");
 
-	if(acno in accountDetails){
-		return {
-            status: false,
-			statusCode: 422,
-            message: "User Exit, Please Login"
-        }
-	}
-	else{
-		accountDetails[acno]={
-			acno,
-			username,
-			balance:0,
-			password,
-		}
-		// this.saveDetails()
-		console.log(accountDetails);
-		return {
-            status: true,
-			statusCode: 200,
-            message: "Registration Successfull.."
-        }
-	}
-  }
-
-  const login = (request, ac_no, pswd)=>{
-	let dataset = accountDetails;
-	if(ac_no in dataset){
-		var pwd1 = dataset[ac_no].password;
-		if(pswd == pwd1){
-		  request.session.currentUser = dataset[ac_no];
-			// this.saveDetails()
-			return {
-                status: true,
-				statusCode: 200,
-                message: "Login Successful",
-            }
-		}
-		else{
-			return {
-                status: false,
-				statusCode: 422,
-                message: "incorrect Password"
-            }
-		}
-	}
-	else{
-		return {
-            status: false,
-			statusCode: 422,
-            message: "No User Exist"
-        }
-	}
-}
-
-const deposit = (accno,pwd,amt) => {
-	var int_amt = parseInt(amt);
-	let dataset = accountDetails;
-	if(accno in dataset){
-		var pwd1 = dataset[accno].password;
-		if(pwd == pwd1){
-			dataset[accno].balance+=int_amt;
-			// this.saveDetails()
-			return {
-				status: true,
-				statusCode: 200,
-				message: "Amount Credited with "  + amt,
-				balance: dataset[accno].balance
-			}
-		}
-		else{
-			return {
-				status: false,
-				statusCode: 422,
-				message: "incorrect Password"
-			}
-		}
-	}
-	else{
-		return {
-			status: false,
-			statusCode: 422,
-			message: "Invalid Form"
-		}
-	}
-}
-
-
-const withdraw = (accno,pwd,amt) => {
-	var int_amt = parseInt(amt);
-	let dataset = accountDetails;
-	var avlamt = dataset[accno].balance;
-
-	if(accno in dataset){
-		var pwd1 = dataset[accno].password;
-		if(pwd == pwd1){
-			if(avlamt > amt){
-				var total = dataset[accno].balance-=int_amt;
-				// this.saveDetails()
-				return {
-					status: true,
-					statusCode: 200,
-					message: "Amount Debited with "  + amt,
-					balance: dataset[accno].balance
-				}
-			}
-			else{
+	return db.User.findOne({
+		acno}).then(user => {
+			console.log(user)
+			if(user){
 				return {
 					status: false,
 					statusCode: 422,
-					message: "Low Balance"
+					message: "User Exit, Please Login"
 				}
 			}
-		}
-		else{
+			else{
+				const newUser = new db.User({
+					acno,
+					username,
+					balance:0,
+					password
+				});
+				newUser.save();
+				return {
+					status: true,
+					statusCode: 200,
+					message: "Registration Successfull.."
+				}
+			}
+		})
+	
+  }
+
+  const login = (request, acno, pwd)=>{
+	  var acno = parseInt(acno);
+	  return db.User.findOne({
+		acno:acno,
+		password:pwd,
+	  }).then(user =>{
+		  if(user){
+			request.session.currentUser = user;
+			  return{
+				status: true,
+				statusCode: 200,
+                message: "Login Successful",
+			  }
+		  }
+		  else{
+			return {
+                status: false,
+				statusCode: 422,
+				message: "No User Exist"
+            } 
+		  }
+	  })
+}
+
+const deposit = (accno,pwd,amt) => {
+	// let dataset = accountDetails;
+
+	return db.User.findOne({
+		acno:accno,
+		password:pwd,
+		// amount:amt
+	}).then(user =>{
+		if(!user){
 			return {
 				status: false,
 				statusCode: 422,
 				message: "incorrect Password"
 			}
 		}
-	}
-	else{
-		return {
-			status: false,
-			statusCode: 422,
-			message: "Invalid Form"
+		else{
+			user.balance+=parseInt(amt);
+			user.save()
+			return{
+				status: true,
+				statusCode: 200,
+				message: "Amount Credited with "  + amt,
+				balance: user.balance
+			}
 		}
-	}
+	})
+}
+
+
+
+const withdraw = (accno,pwd,amt) => {
+	// var int_amt = parseInt(amt);
+
+	return db.User.findOne({
+		acno:accno,
+		password:pwd,
+	}).then(user =>{
+		if(!user){
+			return {
+				status: false,
+				statusCode: 422,
+				message: "No User Exist"
+			}
+		}
+		if(amt > user.balance){
+			return {
+				status: false,
+				statusCode: 422,
+				message: "Low Balance"
+			}
+		}
+		else{
+			user.balance-=parseInt(amt);
+			user.save();
+			return {
+				status: true,
+				statusCode: 200,
+				message: "Amount Debited with "  + amt,
+				balance: user.balance
+			}
+		}
+	})
 }
 
 module.exports = {

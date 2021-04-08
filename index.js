@@ -36,41 +36,49 @@ app.get("/", (request, response)=>{ // express Routing
 
 app.post("/register", (request, response)=>{
     // console.log(request.body);
-    const result = dataService.register(
+    dataService.register(
         request.body.acno,
         request.body.username,
         request.body.password
     )
-    console.log(response.status(result.statusCode).json(result));
+    .then(result =>{
+        response.status(result.statusCode).json(result)
+    })
 })
 
 app.post("/login", (request, response)=>{
     // console.log(request.body);
-    const result = dataService.login(
+    dataService.login(
         request,
         request.body.acno,
-        request.body.pswd
+        request.body.pwd
     )
-    console.log(response.status(result.statusCode).json(result));
+    .then(result =>{
+        response.status(result.statusCode).json(result)
+    })
 })
 
 app.post("/deposit", authMiddleware, (request, response)=>{
     // console.log(request.session.currentUser);
-    const result = dataService.deposit(
+    dataService.deposit(
         request.body.acno,
         request.body.pwd,
         request.body.amt
     )
-    console.log(response.status(result.statusCode).json(result));
+    .then(result =>{
+        response.status(result.statusCode).json(result)
+    })
 })
 
 app.post("/withdraw", authMiddleware, (request, response)=>{
-    const result = dataService.withdraw(
+    dataService.withdraw(
         request.body.acno,
         request.body.pwd,
         request.body.amt
     )
-    console.log(response.status(result.statusCode).json(result));
+    .then(result =>{
+        response.status(result.statusCode).json(result)
+    })
 })
 
 // app.post("/", (request, response)=>{
@@ -86,5 +94,5 @@ app.post("/withdraw", authMiddleware, (request, response)=>{
 //     response.send("Delete Method")
 // })
 app.listen(4000,()=>{ // port define
-    console.log("Node.js")
+    console.log("Running")
 });
